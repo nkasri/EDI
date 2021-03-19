@@ -1,2 +1,0 @@
-pypeg2
-requests
