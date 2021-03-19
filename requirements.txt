@@ -1,3 +1,2 @@
 pypeg2
 requests
-simplejson
