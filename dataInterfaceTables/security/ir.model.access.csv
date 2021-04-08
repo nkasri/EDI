@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_datainterfacetables_lead,datainterfacetables.lead,model_datainterfacetables_lead,base.group_user,1,1,1,1
+access_datainterfacetables_client,datainterfacetables.client,model_datainterfacetables_client,base.group_user,1,1,1,1

@@ -1,0 +1,64 @@
+<odoo>
+    <data>
+
+        <record id="datainterfacetables_client_form_view" model="ir.ui.view">
+            <field name="name">datainterfacetables.client.form</field>
+            <field name="model">datainterfacetables.client</field>
+            <field name="arch" type="xml">
+                <form string="ModelTitle">
+                    <field name="name" placeholder="name"/>
+                </form>
+            </field>
+        </record>
+
+        <record id="dataInterfaceTables_client_tree_view" model="ir.ui.view">
+            <field name="name">datainterfacetables.client.tree</field>
+            <field name="model">datainterfacetables.client</field>
+            <field name="arch" type="xml">
+                <tree string="ModelTitle">
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="city"/>
+                    <field name="country_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="dataInterfaceTables_client_import_action" model="ir.actions.server">
+            <field name="name">Import clients data to CRM</field>
+            <field name="model_id" ref="dataInterfaceTables.model_datainterfacetables_client"/>
+            <field name="binding_model_id" ref="dataInterfaceTables.model_datainterfacetables_client"/>
+            <field name="state">code</field>
+            <field name="code">action = records.importData()</field>
+        </record>
+
+
+        <record id="dataInterfaceTables_client_import_scheduler" model="ir.cron">
+            <field name="name">Backup scheduler</field>
+            <field name="model_id" ref="dataInterfaceTables.model_datainterfacetables_client"/>
+            <field name="state">code</field>
+            <field name="code">model.cronImportData()</field>
+            <field name="numbercall">-1</field>
+            <field name="interval_type">hours</field>
+            <field name="interval_number">12</field>
+            <field name="doall">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="datainterfacetables_client_act_window" model="ir.actions.act_window">
+            <field name="name">clients data interface tables</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">datainterfacetables.client</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    There is no examples click here to add new ModelTitle.
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Clients" id="data_client_menu" parent="dataInterfaceTables_menu" action="datainterfacetables_client_act_window" sequence="10"/>
+
+    </data>
+</odoo>
