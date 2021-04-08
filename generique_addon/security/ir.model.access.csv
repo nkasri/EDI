@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_generique_addon_generique_addon,generique_addon.generique_addon,model_generique_addon_generique_addon,base.group_user,1,1,1,1
