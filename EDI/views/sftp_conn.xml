@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="view_sftp_conn_form">
+            <field name="name">SFTP connections</field>
+            <field name="model">edi.sftp_connection</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+
+                            <header>
+                                <button name='sftp_test_conn' string="SFTP Test Connection" type="object" class="oe_highlight" groups="base.group_user"/>
+                            </header>
+                    <sheet>
+                        <group style="width:80%">
+                             <field name="supplier" string="Fournisseur"/>
+                             <field name="hostname" string="Host"/>
+                             <field name="username" string="Username"/>
+                             <field name="password" string="Password" password="True"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+         <record model="ir.ui.view" id="view_sftp_conn_tree">
+            <field name="name">SFTP connections</field>
+            <field name="model">edi.sftp_connection</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                             <field name="supplier" string="Fournisseur"/>
+                             <field name="hostname" string="Host"/>
+                             <field name="username" string="Username"/>
+                             <field name="password" string="Password" password="True"/>
+
+
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="edi_sftp_conn">
+            <field name="name">SFTP Connections</field>
+            <field name="res_model">edi.sftp_connection</field>
+            <field name="view_mode">tree,form</field>
+            <field name='view_id' ref='view_sftp_conn_tree'/>
+        </record>
+
+        <menuitem id="main_edi_menu" name="EDI"/>
+        <menuitem id="main_edi_sftp_conn" parent="main_edi_menu" action="edi_sftp_conn"/>
+    </data>
+</odoo>

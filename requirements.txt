@@ -1,2 +1,4 @@
 pypeg2
-requests
+requests~=2.23.0
+paramiko~=2.7.2
+

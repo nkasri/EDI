@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data noupdate="1">
+        <record model="edi.sftp_connection" id="sftp_connection_also">
+            <field name="supplier">ALSO</field>
+            <field name="hostname">paco.actebis.com</field>
+            <field name="username">hehupolewehuda</field>
+            <field name="password">pidigi8tuzu</field>
+
+        </record>
+    </data>
+</odoo>
