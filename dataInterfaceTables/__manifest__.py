@@ -29,6 +29,7 @@
         'views/views.xml',
         'views/clients.xml',
         'views/leads.xml',
+        'views/orders.xml'
     ],
     # only loaded in demonstration mode
     'demo': [
