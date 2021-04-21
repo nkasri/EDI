@@ -8,5 +8,14 @@
             <field name="password">pidigi8tuzu</field>
 
         </record>
+        <record model="edi.sftp_connection" id="sftp_connection_wissal">
+            <field name="supplier">wissalgroup</field>
+            <field name="hostname">ec2-18-133-155-146.eu-west-2.compute.amazonaws.com</field>
+            <field name="username">sftpuser</field>
+            <field name="password">sftpuser</field>
+
+        </record>
+
+
     </data>
 </odoo>

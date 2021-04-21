@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <!-- SFTP Connections form view-->
         <record model="ir.ui.view" id="view_sftp_conn_form">
             <field name="name">SFTP connections</field>
             <field name="model">edi.sftp_connection</field>
@@ -22,7 +23,8 @@
                 </form>
             </field>
         </record>
-         <record model="ir.ui.view" id="view_sftp_conn_tree">
+        <!-- SFTP Connections tree view-->
+        <record model="ir.ui.view" id="view_sftp_conn_tree">
             <field name="name">SFTP connections</field>
             <field name="model">edi.sftp_connection</field>
             <field name="type">tree</field>
@@ -37,7 +39,7 @@
                 </tree>
             </field>
         </record>
-
+        <!-- SFTP Connections action-->
         <record model="ir.actions.act_window" id="edi_sftp_conn">
             <field name="name">SFTP Connections</field>
             <field name="res_model">edi.sftp_connection</field>
@@ -47,5 +49,269 @@
 
         <menuitem id="main_edi_menu" name="EDI"/>
         <menuitem id="main_edi_sftp_conn" parent="main_edi_menu" action="edi_sftp_conn"/>
+
+        <!-- SFTP file_download form view-->
+        <record model="ir.ui.view" id="view_sftp_file_download_form">
+            <field name="name">File download</field>
+            <field name="model">edi.file_download</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                            <header>
+                                <button name='reload' string="Reload files" type="object" class="oe_highlight" groups="base.group_user"/>
+                            </header>
+                    <sheet>
+                        <group style="width:80%">
+                            <field name="sftp_connection"/>
+                             <field name="supplier" string="Fournisseur"/>
+                            <field name="priceList" string="priceList"/>
+                            <field name="products" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!-- SFTP file_download tree view-->
+        <record model="ir.ui.view" id="view_sftp_file_download_tree">
+            <field name="name">File Download</field>
+            <field name="model">edi.file_download</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                             <field name="supplier" string="Fournisseur"/>
+                             <field name="products" />
+
+                </tree>
+            </field>
+        </record>
+        <!-- SFTP file_download action-->
+        <record model="ir.actions.act_window" id="edi_sftp_file_download">
+            <field name="name">File download</field>
+            <field name="res_model">edi.file_download</field>
+            <field name="view_mode">tree,form</field>
+            <field name='view_id' ref='view_sftp_file_download_tree'/>
+        </record>
+
+        <menuitem id="main_edi_sftp_file_download" parent="main_edi_menu" action="edi_sftp_file_download"/>
+
+
+
+          <!-- SFTP field form view-->
+        <record model="ir.ui.view" id="view_sftp_file_download_form">
+            <field name="name">File download</field>
+            <field name="model">edi.file_download</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                            <header>
+                                <button name='reload' string="Reload files" type="object" class="oe_highlight" groups="base.group_user"/>
+                            </header>
+                    <sheet>
+                        <group style="width:80%">
+                            <field name="sftp_connection"/>
+                             <field name="supplier" string="Fournisseur"/>
+                            <field name="priceList" string="priceList"/>
+                            <field name="products" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!-- SFTP fiedl tree view-->
+        <record model="ir.ui.view" id="view_sftp_file_download_tree">
+            <field name="name">File Download</field>
+            <field name="model">edi.file_download</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                             <field name="supplier" string="Fournisseur"/>
+                             <field name="products" />
+
+                </tree>
+            </field>
+        </record>
+         <!-- SFTP fields action-->
+
+              <!-- Product form view-->
+        <record model="ir.ui.view" id="view_edi_product_form">
+            <field name="name">Product prices</field>
+            <field name="model">edi.product</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group style="width:80%">
+                             <field name="product_id"/>
+                            <field name="AvailableQuantity" />
+                            <field name="NetPrice" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!--  Product tree view-->
+        <record model="ir.ui.view" id="view_edi_product_tree">
+            <field name="name">File Download</field>
+            <field name="model">edi.product</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                            <field name="product_id"/>
+                            <field name="AvailableQuantity" />
+                            <field name="NetPrice" />
+
+                </tree>
+            </field>
+        </record>
+        <!-- Product action-->
+        <record model="ir.actions.act_window" id="edi_product_action">
+            <field name="name">Product</field>
+            <field name="res_model">edi.product</field>
+            <field name="view_mode">tree,form</field>
+            <field name='view_id' ref='view_edi_product_tree'/>
+        </record>
+
+        <menuitem id="main_edi_product_action" parent="main_edi_menu" action="edi_product_action"/>
+
+         <!-- price list config form view-->
+        <record model="ir.ui.view" id="view_edi_price_list_config_form">
+            <field name="name">Price list configuration</field>
+            <field name="model">edi.price_list_config</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                                <button name='return_view' string="Configure fields" type="object" class="oe_highlight" groups="base.group_user" />
+                            </header>
+                    <sheet>
+                        <group style="width:80%">
+                             <field name="sftp_conn"/>
+                            <field name="supplier" />
+                            <field name="priceListName"/>
+                            <field name="listFields"/>
+                            <field name="listFieldConfig"/>
+
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!--  price list config tree view-->
+        <record model="ir.ui.view" id="view_edi_price_list_config_tree">
+            <field name="name">Price List Configuration</field>
+            <field name="model">edi.price_list_config</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                         <field name="sftp_conn"/>
+                            <field name="supplier" />
+                            <field name="priceListName"/>
+                     <field name="listFieldConfig"/>
+
+
+                </tree>
+            </field>
+        </record>
+        <!-- price list config action-->
+        <record model="ir.actions.act_window" id="edi_price_list_config_action">
+            <field name="name">Price list config</field>
+            <field name="res_model">edi.price_list_config</field>
+            <field name="view_mode">tree,form</field>
+            <field name='view_id' ref='view_edi_price_list_config_tree'/>
+        </record>
+
+        <menuitem id="main_edi_price_list_config_action" parent="main_edi_menu" action="edi_price_list_config_action"/>
+
+
+
+
+
+
+
+          <!-- price list config form view-->
+        <record model="ir.ui.view" id="view_edi_price_list_field_form">
+            <field name="name">Price list configuration</field>
+            <field name="model">edi.price_list_fields</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group style="width:80%">
+                             <field name="selection"/>
+                            <field name="config" />
+                            <field name="priceSupplier"/>
+                            <field name="qtySupplier" />
+
+
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!--  price list config tree view-->
+        <record model="ir.ui.view" id="view_edi_price_list_field_tree">
+            <field name="name">Price List Configuration</field>
+            <field name="model">edi.price_list_fields</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                          <field name="selection"/>
+                            <field name="config" />
+                                <field name="priceSupplier"/>
+                            <field name="qtySupplier" />
+
+
+                </tree>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="edi_sftp_fields">
+            <field name="name">File download</field>
+            <field name="res_model">edi.price_list_fields</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <menuitem id="main_edi_fields_actions" parent="main_edi_menu" action="edi_sftp_fields"/>
+
+
+        <!-- SFTP file_upload form view
+        <record model="ir.ui.view" id="view_sftp_file_upload_form">
+            <field name="name">File upload</field>
+            <field name="model">edi.sftp_connection</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group style="width:80%">
+                             <field name="supplier" string="Fournisseur"/>
+                            <field name="orders" />
+
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <!SFTP file_upload tree view
+        <record model="ir.ui.view" id="view_sftp_file_upload_tree">
+            <field name="name">File upload</field>
+            <field name="model">edi.sftp_connection</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                             <field name="supplier" string="Fournisseur"/>
+                             <field name="orders" />
+                </tree>
+            </field>
+        </record>
+         SFTP file_upload action
+        <record model="ir.actions.act_window" id="edi_sftp_file_upload">
+            <field name="name">File upload</field>
+            <field name="res_model">edi.sftp_connection</field>
+            <field name="view_mode">tree,form</field>
+            <field name='view_id' ref='view_sftp_file_upload_tree'/>
+        </record>
+
+        <menuitem id="main_edi_sftp_file_upload" parent="main_edi_menu" action="edi_sftp_file_upload"/>
+        -->
     </data>
 </odoo>

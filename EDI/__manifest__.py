@@ -26,7 +26,10 @@
         'security/ir.model.access.csv',
         'views/sftp_conn.xml',
         'views/warning_wizard.xml',
-        'data/sftp_connection.xml'
+        'data/sftp_connection.xml',
+        'data/products.xml',
+        'data/data_transfer.xml'
+
     ],
     # only loaded in demonstration mode
     'demo': [

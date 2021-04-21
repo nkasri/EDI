@@ -1,3 +1,11 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_edi_sftp_connection,edi.sftp_connection,model_edi_sftp_connection,base.group_user,1,1,1,1
 access_edi_warning_wizard,edi.warning_wizard,model_edi_warning_wizard,base.group_user,1,1,1,1
+access_edi_product,edi.product,model_edi_product,base.group_user,1,1,1,1
+access_edi_order,edi.order,model_edi_order,base.group_user,1,1,1,1
+access_edi_file_transfer,edi.file_transfer,model_edi_file_transfer,base.group_user,1,1,1,1
+access_edi_file_download,edi.file_download,model_edi_file_download,base.group_user,1,1,1,1
+access_edi_price_list_config,edi.price_list_config,model_edi_price_list_config,base.group_user,1,1,1,1
+access_edi_price_list_fields,edi.price_list_fields,model_edi_price_list_fields,base.group_user,1,1,1,1
+access_edi_selections_fields,edi.selections.fields,model_edi_selections_fields,base.group_user,1,1,1,1
+access_edi_selections,edi.selections,model_edi_selections,base.group_user,1,1,1,1

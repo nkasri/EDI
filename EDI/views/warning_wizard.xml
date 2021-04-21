@@ -29,5 +29,43 @@
             </field>
 
         </record>
+    <record id="view_warning_wizard" model="ir.ui.view">
+
+            <field name="name">Price list fields configuration</field>
+
+            <field name="model">edi.price_list_fields</field>
+
+            <field name="arch" type="xml">
+
+            <form string="Price list fields configuration ">
+
+
+                        <group>
+                                    <group>
+                                            <field name="config"/>
+                                    </group>
+                                    <group>
+                                            <field name="qtySupplier"/>
+                                    </group>
+                                    <group>
+                                            <field name="priceSupplier"/>
+                                    </group>
+                                    <group>
+                                            <field name="product_codeSupplier"/>
+                                    </group>
+
+                            </group>
+
+                <footer>
+
+                    <button name="edit" string="OK" type="object" class="oe_highlight" groups="base.group_user"/>
+
+                </footer>
+
+            </form>
+
+            </field>
+
+        </record>
 
 </odoo>
