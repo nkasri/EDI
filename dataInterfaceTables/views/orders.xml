@@ -1,18 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
         <record id="datainterfacetables_order_form_view" model="ir.ui.view">
             <field name="name">datainterfacetables.order.form</field>
             <field name="model">datainterfacetables.order</field>
+            <field name="type">form</field>
             <field name="arch" type="xml">
                 <form string="ModelTitle">
-                    <field name="idTekkeys"/>
-                    <field name="number"/>
-                    <field name="dateTekkeys"/>
-                    <field name="orderLines"/>
-                    <field name="totals"/>
-                    <field name="InvoiceAdresse"/>
-                    <field name="shippingAdresse"/>
-                    <field name="shippingFees"/>
+                    <sheet>
+                        <field name="idTekkeys" string="ID TEKKEYS"/>
+                        <field name="clientName" string="Client Name"/>
+                        <field name="number" string="Number"/>
+                        <field name="dateTekkeys" string="Data Tekkeys"/>
+                        <field name="orderLines" string="Order Lines"/>
+                        <field name="totals" string="Total"/>
+                        <field name="InvoiceAdresse" string="Invoice Adresse"/>
+                        <field name="shippingAdresse" string="shipping Adresse"/>
+                        <field name="shippingFees" string="shipping Fees"/>
+                    </sheet>
                 </form>
             </field>
         </record>

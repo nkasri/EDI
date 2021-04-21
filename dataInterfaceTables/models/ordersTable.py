@@ -7,6 +7,7 @@ class OrderTable(models.Model):
     _description = "Order"
 
     idTekkeys = fields.Char(string='Tekkeys Order ID')
+    clientName = fields.Char(string="Name")
     number = fields.Integer(string='Number')
     dateTekkeys = fields.Date(string='Tekkeys Date')
     orderLines = fields.One2many('datainterfacetables.order.line', 'orderId')
@@ -18,6 +19,7 @@ class OrderTable(models.Model):
     def acceptOrder(self, data):
         order = {
             'idTekkeys': data['idTekkeys'],
+            'clientName': data['clientName'],
             'number': data['number'],
             'dateTekkeys': data['dateTekkeys'],
             'totals': data['totals'],
@@ -47,35 +49,63 @@ class OrderTable(models.Model):
 
     def importData(self):
         for record in self:
-            obj = {
-                'idTekkeys': record.name,
-                'number': record.partner_id,
-                'dateTekkeys': record.partner_name,
-                'orderLines': record.street,
-                'totals': record.street2,
-                'InvoiceAdresse': record.zip,
-                'shippingAdresse': record.city,
-                'shippingFees': record.state_id,
+            partner_id = self.env['res.partner'].search([('name', '=', record['clientName'])])
+            order = {
+                'client_order_ref': record['idTekkeys'],
+                'partner_id': partner_id.id,
+                'date_order': record['dateTekkeys'],
+                'amount_total': record['totals'],
             }
-            result = self.env['sale.order'].create(obj)
+            orderID = self.env['sale.order'].create(order)
             record.unlink()
+            print(orderID.id)
+
+            lines = self.env['datainterfacetables.order.line'].search([('orderId', '=', record['id'])])
+            linesIds = []
+            for line in lines:
+                productID = self.env['product.product'].search([('default_code', '=', line['reference'])])
+                objLine = {
+                    'order_id': orderID.id,
+                    'product_id': productID.id,
+                    'product_uom_qty': line['qte'],
+                    'price_unit': line['salePrice']
+                }
+                lineID = self.env['sale.order.line'].create(objLine)
+                line.unlink()
+                linesIds.append(lineID.id)
+
+            odooOrder = self.env['sale.order'].search([('id', '=', orderID.id)])
+            odooOrder.write({'order_line': linesIds})
 
     def cronImportData(self):
-        result = self.env['datainterfacetables.order'].search([])
-        print(result)
-        for record in result:
-            obj = {
-                'idTekkeys': record.name,
-                'number': record.partner_id,
-                'dateTekkeys': record.partner_name,
-                'orderLines': record.street,
-                'totals': record.street2,
-                'InvoiceAdresse': record.zip,
-                'shippingAdresse': record.city,
-                'shippingFees': record.state_id,
+        for record in self:
+            partner_id = self.env['res.partner'].search([('name', '=', record['clientName'])])
+            order = {
+                'client_order_ref': record['idTekkeys'],
+                'partner_id': partner_id.id,
+                'date_order': record['dateTekkeys'],
+                'amount_total': record['totals'],
             }
-            res = self.env[sale.order].create(obj)
+            orderID = self.env['sale.order'].create(order)
             record.unlink()
+            print(orderID.id)
+
+            lines = self.env['datainterfacetables.order.line'].search([('orderId', '=', record['id'])])
+            linesIds = []
+            for line in lines:
+                productID = self.env['product.product'].search([('default_code', '=', line['reference'])])
+                objLine = {
+                    'order_id': orderID.id,
+                    'product_id': productID.id,
+                    'product_uom_qty': line['qte'],
+                    'price_unit': line['salePrice']
+                }
+                lineID = self.env['sale.order.line'].create(objLine)
+                line.unlink()
+                linesIds.append(lineID.id)
+
+            odooOrder = self.env['sale.order'].search([('id', '=', orderID.id)])
+            odooOrder.write({'order_line': linesIds})
 
 
 class OrderLineTable(models.Model):
