@@ -2,3 +2,4 @@
 
 from . import leadsTable
 from . import clientsTable
+from . import ordersTable
