@@ -5,6 +5,8 @@ import csv
 import tarfile
 import zipfile
 import os
+import boto3
+import json
 
 
 def sftp_conn(hostname, username, password, port=22):
@@ -82,7 +84,7 @@ class edi_product(models.Model):
     _description = 'Transition table for product prices'
     _rec_name = 'product_id'
     product_id = fields.Integer('Product ID')
-    NetPrice = fields.Integer('Product price')
+    NetPrice = fields.Float('Product price')
     AvailableQuantity = fields.Integer('Product available quantity')
 
 
@@ -116,8 +118,12 @@ class edi_download(models.Model):
             rec.supplier = rec.sftp_connection.supplier
 
     def reload(self):
-        localpath = "/mnt/extra-addons/pricelists/" + self.priceList.priceListName
+        localpath = self.priceList.priceListNameFinal
         self.process_csv(localpath)
+
+    def send_queue(self, client,queue, product):
+        data = json.dumps(product)
+        response = queue.send_message(MessageBody=data)
 
     # def reload(self):
     #     hostname = self.sftp_connection.hostname
@@ -147,23 +153,31 @@ class edi_download(models.Model):
     #         print(e)
 
     def process_csv(self, filepath):
-        with open(filepath) as csv_file:
+        with open(filepath, encoding='cp1252', errors='ignore') as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)
+            client = boto3.resource('sqs', region_name='eu-west-2', aws_access_key_id="AKIAXOFYUBQFXLYZTW74",
+                                    aws_secret_access_key="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")
+            queue = client.get_queue_by_name(QueueName='tekkeysOdooOrders')
             for row in csv_reader:
                 if (len(row)) > 2:
-                    # self.productUpdate(row[0], row[2], row[1])
-                    print(f"code product {row[int(self.priceList.listFieldConfig.product_codeSupplier)]}")
-                    print(f"qtysup {row[int(self.priceList.listFieldConfig.qtySupplier)]}")
-                    print(f"pricelsitconfig id {self.priceList}")
-                    # print(f"price product {self.priceList.listFieldConfig._fields['priceSupplier'].selection)")
-                    listConfig = self.env['edi.price_list_config'].search([('id', '=', self.priceList.id)])
-                    # print(listConfig.priceSupplier)
-                    # print(listConfig.qtySupplier)
-                    print(listConfig)
-                    self.productUpdate(row[int(self.priceList.listFieldConfig.product_codeSupplier)],
-                                       row[int(self.priceList.listFieldConfig.qtySupplier)],
-                                       row[int(self.priceList.listFieldConfig.priceSupplier)])
+                    # # self.productUpdate(row[0], row[2], row[1])
+                    # print(f"code product {row[int(self.priceList.listFieldConfig.product_code)]}")
+                    # print(f"qtysup {row[int(self.priceList.listFieldConfig.qty)]}")
+                    # print(f"pricelsitconfig id {self.priceList}")
+                    try:
+                        self.productUpdate(row[int(self.priceList.listFieldConfig.product_code)],
+                                           row[int(self.priceList.listFieldConfig.qty)],
+                                           row[int(self.priceList.listFieldConfig.price)])
+                        message = {'product_code': row[self.priceList.listFieldConfig.product_code],
+                                   'qty': row[int(self.priceList.listFieldConfig.qty)],
+                                   'price': row[int(self.priceList.listFieldConfig.price)]
+                                   }
+                        self.send_queue(client,queue,message)
+                    except Exception as e:
+                        print(f"product with code: {row[int(self.priceList.listFieldConfig.product_code)]}"
+                              f"has wrong value"
+                              f"")
 
     def productUpdate(self, product_ref, qty, price):
         product_obj = self.env['edi.product'].search([('product_id', '=', product_ref)])
@@ -177,50 +191,50 @@ class edi_download(models.Model):
             product_obj.sudo().write({'AvailableQuantity': qty, 'NetPrice': price})
         return product_obj
 
-    def extract_file(self, filename):
-        if tarfile.is_tarfile(filename):
-            with tarfile.open(filename) as tf:
-                tf.extractall()
-            return filename
-        elif zipfile.is_zipfile(filename):
-            with zipfile.ZipFile(filename, "r") as zf:
-                currentdir = os.getcwd()
-                newdir = currentdir + "/dir" + filename
-                print(newdir)
-                try:
-                    os.mkdir(newdir)
-                except Exception as e:
-                    print("Folder already exists")
-                os.chdir(newdir)
-                zf.extractall()
-                print(newdir + "/" + filename)
-                newfile = self.archive_files(newdir + "/" + filename)
-            return newfile
-        else:
-            print('{} is not an accepted archive file'.format(filename))
-
-    def extract_file_multiple(self, filename):
-        if tarfile.is_tarfile(filename):
-            with tarfile.open(filename) as tf:
-                tf.extractall()
-            return filename
-        elif zipfile.is_zipfile(filename):
-            with zipfile.ZipFile(filename, "r") as zf:
-                currentdir = os.getcwd()
-                newdir = currentdir + filename + "/dir"
-                try:
-                    os.mkdir(newdir)
-                except Exception as e:
-                    print("Folder already exists")
-                os.chdir(newdir)
-                zf.extractall()
-                archive_files = self.archive_files(newdir + "/" + filename)
-                newfiles = []
-                for name in archive_files:
-                    newfiles.append(newdir + "/" + name)
-            return newfiles
-        else:
-            print('{} is not an accepted archive file'.format(filename))
+    # def extract_file(self, filename):
+    #     if tarfile.is_tarfile(filename):
+    #         with tarfile.open(filename) as tf:
+    #             tf.extractall()
+    #         return filename
+    #     elif zipfile.is_zipfile(filename):
+    #         with zipfile.ZipFile(filename, "r") as zf:
+    #             currentdir = os.getcwd()
+    #             newdir = currentdir + "/dir" + filename
+    #             print(newdir)
+    #             try:
+    #                 os.mkdir(newdir)
+    #             except Exception as e:
+    #                 print("Folder already exists")
+    #             os.chdir(newdir)
+    #             zf.extractall()
+    #             print(newdir + "/" + filename)
+    #             newfile = self.archive_files(newdir + "/" + filename)
+    #         return newfile
+    #     else:
+    #         print('{} is not an accepted archive file'.format(filename))
+    #
+    # def extract_file_multiple(self, filename):
+    #     if tarfile.is_tarfile(filename):
+    #         with tarfile.open(filename) as tf:
+    #             tf.extractall()
+    #         return filename
+    #     elif zipfile.is_zipfile(filename):
+    #         with zipfile.ZipFile(filename, "r") as zf:
+    #             currentdir = os.getcwd()
+    #             newdir = currentdir + filename + "/dir"
+    #             try:
+    #                 os.mkdir(newdir)
+    #             except Exception as e:
+    #                 print("Folder already exists")
+    #             os.chdir(newdir)
+    #             zf.extractall()
+    #             archive_files = self.archive_files(newdir + "/" + filename)
+    #             newfiles = []
+    #             for name in archive_files:
+    #                 newfiles.append(newdir + "/" + name)
+    #         return newfiles
+    #     else:
+    #         print('{} is not an accepted archive file'.format(filename))
 
     def file_type(self, filename):
         filetype = "file"
@@ -229,18 +243,6 @@ class edi_download(models.Model):
         elif zipfile.is_zipfile(filename):
             filetype = "tar"
         return filetype
-
-    def archive_files(self, filename, type):
-        files = []
-        if type == "tar":
-            f = tarfile.open(filename)
-            for info in f:
-                files.append(info.name)
-        else:
-            f = zipfile.ZipFile(filename)
-            for name in f.namelist():
-                files.append(name)
-        return files
 
 
 class edi_upload(models.Model):
@@ -258,6 +260,7 @@ class edi_pricelist_config(models.Model):
     sftp_conn = fields.Many2one('edi.sftp_connection')
     supplier = fields.Many2one("res.partner")
     priceListName = fields.Char("Price list name")
+    priceListNameFinal = fields.Char(compute='compute_priceListName')
     listFields = fields.Char(compute="_get_field")
     listFieldConfig = fields.Many2one('edi.price_list_fields')
     selection = fields.Many2one('edi.selections')
@@ -291,6 +294,62 @@ class edi_pricelist_config(models.Model):
     #                     if sftp: sftp.close()
     #                 except Exception as e:
     #                     print(e)
+    @api.depends('priceListName')
+    def compute_priceListName(self):
+        self.get_file()
+        # localpath = "/mnt/extra-addons/pricelists/" + self.priceListName
+
+        if self.priceListName:
+            self.priceListNameFinal = self.extract_file(self.priceListName)
+        else:
+            self.priceListNameFinal = ""
+
+    def extract_file(self, file):
+        filename = "/mnt/extra-addons/pricelists/" + file
+        if tarfile.is_tarfile(filename):
+            with tarfile.open(filename) as tf:
+                tf.extractall()
+            return filename
+        elif zipfile.is_zipfile(filename):
+            with zipfile.ZipFile(filename, "r") as zf:
+                newdir = filename + "dir"
+                print(f"that the new folder {newdir}")
+                try:
+                    os.mkdir(newdir)
+                except Exception as e:
+                    print(e)
+                    print("Folder already exists")
+                os.chdir(newdir)
+                zf.extractall()
+                print(newdir + "/" + file)
+                newfile = self.archive_files(filename, 'zip')
+                newFilePath = newdir + "/" + newfile[0]
+            return newFilePath
+        else:
+            print('{} is not an accepted archive file'.format(filename))
+            return filename
+
+    def archive_files(self, filename, type):
+        files = []
+        if type == "tar":
+            f = tarfile.open(filename)
+            for info in f:
+                files.append(info.name)
+        else:
+            f = zipfile.ZipFile(filename)
+            for name in f.namelist():
+                files.append(name)
+        return files
+
+    def get_file(self):
+        try:
+            sftp = sftp_conn(self.sftp_conn.hostname, self.sftp_conn.username,
+                             self.sftp_conn.password, 22)
+            localpath = "/mnt/extra-addons/pricelists/" + self.priceListName
+            sftp.get(self.priceListName, localpath)
+            if sftp: sftp.close()
+        except Exception as e:
+            print(e)
 
     def _get_field(self):
         list = []
@@ -300,20 +359,20 @@ class edi_pricelist_config(models.Model):
                 selection = self.env['edi.selections'].create({'name': 'rec.priceListName', 'in_use': True})
                 self.write({'selection': selection})
                 print(f"in the parent method:{self.selection}")
-                localPath = "/mnt/extra-addons/pricelists/" + rec.priceListName
+                localPath = rec.priceListNameFinal
                 try:
-                    with open(localPath) as csv_file:
+                    with open(localPath, encoding='cp1252', errors='ignore') as csv_file:
                         csv_r = csv.reader(csv_file)
                         data = next(csv_r)
                         i = 0
                         for elem in data:
-                            list.append((str(i)+"a", elem))
-                            field = self.field_create(elem, str(i)+"a", True, selection.id)
+                            list.append((str(i), elem))
+                            field = self.field_create(elem, str(i), True, selection.id)
                             selection.write({'fields_ids': [(4, field.id)]})
                             i += 1
                         rec.listFields = list
                 except Exception as e:
-                    print(e)
+                    print(f"_get_field : {e}")
 
     def field_create(self, name, value, in_use, selection_id):
         obj = self.env['edi.selections.fields'].create({
@@ -372,6 +431,9 @@ class edi_pricelist_fields(models.Model):
     product_nameSupplier = fields.Selection(string='Supplier product name', selection=lambda self: self.init())
     qtySupplier = fields.Selection(string='Supplier quantity', selection=lambda self: self.init())
     product_codeSupplier = fields.Selection(string='Supplier product code', selection=lambda self: self.init())
+    product_code = fields.Integer(compute="save", store=True, readonly=True)
+    qty = fields.Integer(compute="save", store=True, readonly=True)
+    price = fields.Integer(compute="save", store=True, readonly=True)
     config = fields.Many2one('edi.price_list_config', readonly=True)
     selection = fields.Many2one('edi.selections')
 
@@ -397,3 +459,10 @@ class edi_pricelist_fields(models.Model):
             print(f"this fields: {rec.priceSupplier}")
             rec = super(edi_pricelist_fields, self).write(vals)
             return rec
+
+    @api.depends('product_codeSupplier', 'priceSupplier', 'qtySupplier')
+    def save(self):
+        for rec in self:
+            rec.product_code = rec.product_codeSupplier
+            rec.price = rec.priceSupplier
+            rec.qty = rec.qtySupplier

@@ -182,6 +182,7 @@
                 <form>
                     <header>
                                 <button name='return_view' string="Configure fields" type="object" class="oe_highlight" groups="base.group_user" />
+                                <button name='get_file' string="Download file" type="object" class="oe_highlight" groups="base.group_user" />
                             </header>
                     <sheet>
                         <group style="width:80%">
@@ -190,7 +191,7 @@
                             <field name="priceListName"/>
                             <field name="listFields"/>
                             <field name="listFieldConfig"/>
-
+                            <field name="priceListNameFinal"/>
                         </group>
 
                     </sheet>
@@ -242,7 +243,11 @@
                             <field name="config" />
                             <field name="priceSupplier"/>
                             <field name="qtySupplier" />
+                            <field name="product_codeSupplier" />
 
+                            <field name="price"/>
+                            <field name="qty" />
+                            <field name="product_code" />
 
                         </group>
 
