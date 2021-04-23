@@ -1,15 +1,34 @@
 from odoo import api, fields, models
 import paramiko
-from paramiko import AuthenticationException
 import csv
 import tarfile
 import zipfile
 import os
 import boto3
 import json
+import configparser
+
+"""
+In this Module:
+ - Configure SFTP connections
+ - Configure File download from sftp connections
+ - Update price list from csv files  
+"""
 
 
 def sftp_conn(hostname, username, password, port=22):
+    """Opens SFTP Connection and return an object
+
+    :param hostname: char
+        Connection hostname
+    :param username: char
+        Connection username
+    :param password: char
+        Connection password
+    :param port: Int
+        Connection port
+    :return: SFTPClient object, referring an SFTP session(channel)
+    """
     try:
         transport = paramiko.Transport(hostname, port)
         transport.connect(None, username, password)
@@ -20,6 +39,22 @@ def sftp_conn(hostname, username, password, port=22):
 
 
 class edi_sftp_connection(models.Model):
+    """
+    SFTP connection configuration
+    ...
+    Attributes
+    --------
+    :param hostname: char
+        Connection hostname
+    :param username: char
+        Connection username
+    :param password: char
+         Connection password
+    :param supplier: char
+         Supplier Name
+
+
+    """
     _name = "edi.sftp_connection"
     _description = "this model will allow sftp connection to remote servers"
     _rec_name = 'supplier'
@@ -29,6 +64,9 @@ class edi_sftp_connection(models.Model):
     supplier = fields.Char("Supplier", required=True)
 
     def sftp_test_conn(self):
+        """Takes the object parametres and test the sftp connection
+        :return: a wizard(edi.warning_wizard) with Success or Failed message
+        """
         self.ensure_one()
         for rec in self:
             hostname = rec.hostname
@@ -38,15 +76,27 @@ class edi_sftp_connection(models.Model):
             try:
                 transport = paramiko.Transport(hostname, port)
                 transport.connect(None, username, password)
-                res = self.wizard_launcher('SFTP Connection', 'Successful connection')
+                res = self.wizard_launcher('SFTP Connection', 'Successful connection', 'success')
                 transport.close()
             except Exception as e:
-                res = self.wizard_launcher('SFTP Connection', 'connection refused')
+                res = self.wizard_launcher('SFTP Connection', 'connection refused', 'failed')
                 return res
             return res
 
-    def wizard_launcher(self, message_title, message):
-        wizard_obj = self.env['edi.warning_wizard'].sudo().create({'message': message})
+    def wizard_launcher(self, message_title, message, state):
+        """Opens a wizard with the message from the parametres
+
+        :param message_title:
+        :param message:
+        :param state:
+        :return: a wizard(edi.warning_wizard) with Success or Failed message
+        """
+        wizard_exist = self.env['edi.warning_wizard'].sudo().search([('name', '=', state)])
+        if wizard_exist:
+            wizard_obj = wizard_exist
+        else:
+            wizard_obj = self.env['edi.warning_wizard'].sudo().create({'name': state,
+                                                                       'message': message})
         res = {'name': message_title,
 
                'type': 'ir.actions.act_window',
@@ -66,16 +116,11 @@ class edi_sftp_connection(models.Model):
 
 
 class warning_popups(models.TransientModel):
+    """Warning popup
+    """
     _name = "edi.warning_wizard"
     _description = "wizard model"
-
-    message = fields.Text(string="Connection status", readonly=True, store=True)
-
-
-class edi_pricelist_config_wizard(models.TransientModel):
-    _name = "edi.price_list_fields"
-    _description = "wizard model"
-
+    name = fields.Char()
     message = fields.Text(string="Connection status", readonly=True, store=True)
 
 
@@ -83,7 +128,7 @@ class edi_product(models.Model):
     _name = 'edi.product'
     _description = 'Transition table for product prices'
     _rec_name = 'product_id'
-    product_id = fields.Integer('Product ID')
+    product_id = fields.Char('Product ID')
     NetPrice = fields.Float('Product price')
     AvailableQuantity = fields.Integer('Product available quantity')
 
@@ -107,64 +152,42 @@ class edi_download(models.Model):
     _inherit = 'edi.file_transfer'
     _name = 'edi.file_download'
     _description = 'file download'
-
+    name = fields.Char(compute='_get_supplier')
     supplier = fields.Char(compute='_get_supplier')
     priceList = fields.Many2one('edi.price_list_config', required=True)
     products = fields.Many2many('edi.product')
 
-    @api.depends('sftp_connection')
+    @api.depends('sftp_connection', 'priceList')
     def _get_supplier(self):
         for rec in self:
-            rec.supplier = rec.sftp_connection.supplier
+            if rec.sftp_connection.supplier and rec.priceList.priceListName:
+                rec.supplier = rec.sftp_connection.supplier
+                rec.name = rec.sftp_connection.supplier + "_" + rec.priceList.priceListName
+            else:
+                rec.name = ""
+                rec.supplier = ""
 
     def reload(self):
-        localpath = self.priceList.priceListNameFinal
-        self.process_csv(localpath)
+        localPath = self.priceList.priceListNameFinal
+        self.process_csv(localPath)
 
-    def send_queue(self, client,queue, product):
+    def send_queue(self, client, queue, product):
         data = json.dumps(product)
         response = queue.send_message(MessageBody=data)
-
-    # def reload(self):
-    #     hostname = self.sftp_connection.hostname
-    #     password = self.sftp_connection.password
-    #     username = self.sftp_connection.username
-    #     port = 22
-    #     try:
-    #         transport = paramiko.Transport(hostname, port)
-    #         transport.connect(None, username, password)
-    #         sftp = paramiko.SFTPClient.from_transport(transport)
-    #         files = sftp.listdir('.')
-    #         for file in files:
-    #             localpath = "/mnt/extra-addons/pricelists/" + file
-    #             sftp.get(file, localpath)
-    #             print("before file type")
-    #             if self.file_type(localpath) == "file":
-    #                 print("inside if file")
-    #                 self.process_csv(localpath)
-    #             else:
-    #                 print("here in the extract")
-    #                 newfiles = self.extract_file(localpath)
-    #                 print(newfiles)
-    #                 self.process_csv(newfiles[0])
-    #         if sftp: sftp.close()
-    #         if transport: transport.close()
-    #     except Exception as e:
-    #         print(e)
 
     def process_csv(self, filepath):
         with open(filepath, encoding='cp1252', errors='ignore') as csv_file:
             csv_reader = csv.reader(csv_file)
             next(csv_reader)
-            client = boto3.resource('sqs', region_name='eu-west-2', aws_access_key_id="AKIAXOFYUBQFXLYZTW74",
-                                    aws_secret_access_key="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")
-            queue = client.get_queue_by_name(QueueName='tekkeysOdooOrders')
+            config = configparser.ConfigParser()
+            config.read("/mnt/extra-addons/EDI/config.ini")
+            client = boto3.resource('sqs',
+                                    region_name=config['DEFAULT']['region_name'],
+                                    aws_access_key_id=config['DEFAULT']['aws_access_key_id'],
+                                    aws_secret_access_key=config['DEFAULT']['aws_secret_access_key'])
+            queue = client.get_queue_by_name(QueueName=config['DEFAULT']['QueueName'])
             for row in csv_reader:
                 if (len(row)) > 2:
-                    # # self.productUpdate(row[0], row[2], row[1])
-                    # print(f"code product {row[int(self.priceList.listFieldConfig.product_code)]}")
-                    # print(f"qtysup {row[int(self.priceList.listFieldConfig.qty)]}")
-                    # print(f"pricelsitconfig id {self.priceList}")
                     try:
                         self.productUpdate(row[int(self.priceList.listFieldConfig.product_code)],
                                            row[int(self.priceList.listFieldConfig.qty)],
@@ -173,68 +196,41 @@ class edi_download(models.Model):
                                    'qty': row[int(self.priceList.listFieldConfig.qty)],
                                    'price': row[int(self.priceList.listFieldConfig.price)]
                                    }
-                        self.send_queue(client,queue,message)
+                    # self.send_queue(client, queue, message)
                     except Exception as e:
                         print(f"product with code: {row[int(self.priceList.listFieldConfig.product_code)]}"
                               f"has wrong value"
                               f"")
 
     def productUpdate(self, product_ref, qty, price):
-        product_obj = self.env['edi.product'].search([('product_id', '=', product_ref)])
-        if not product_obj:
-            product_obj = self.env['edi.product'].sudo().create({'product_id': product_ref,
-                                                                 'AvailableQuantity': qty,
-                                                                 'NetPrice': price
-                                                                 })
-            self.write({'products': [(4, product_obj.id)]})
-        else:
-            product_obj.sudo().write({'AvailableQuantity': qty, 'NetPrice': price})
-        return product_obj
+        try:
+            product_obj = self.env['edi.product'].search([('product_id', '=', product_ref)])
+            product = self.env['product.supplierinfo'].search([('product_code', '=', product_ref)])
+            if not product_obj:
+                product_obj = self.env['edi.product'].sudo().create({'product_id': product_ref,
+                                                                     'AvailableQuantity': qty,
+                                                                     'NetPrice': price
+                                                                     })
+                self.write({'products': [(4, product_obj.id)]})
+            else:
+                product_obj.sudo().write({'AvailableQuantity': qty, 'NetPrice': price})
+            if not product:
+                product = self.env['product.supplierinfo'].sudo().create(
+                    {
+                        'product_code': product_ref,
+                        'min_qty': qty,
+                        'price': price,
+                        'name': self.priceList.supplier,
+                        'delay': 0,
+                        'currency_id': 1
+                    })
 
-    # def extract_file(self, filename):
-    #     if tarfile.is_tarfile(filename):
-    #         with tarfile.open(filename) as tf:
-    #             tf.extractall()
-    #         return filename
-    #     elif zipfile.is_zipfile(filename):
-    #         with zipfile.ZipFile(filename, "r") as zf:
-    #             currentdir = os.getcwd()
-    #             newdir = currentdir + "/dir" + filename
-    #             print(newdir)
-    #             try:
-    #                 os.mkdir(newdir)
-    #             except Exception as e:
-    #                 print("Folder already exists")
-    #             os.chdir(newdir)
-    #             zf.extractall()
-    #             print(newdir + "/" + filename)
-    #             newfile = self.archive_files(newdir + "/" + filename)
-    #         return newfile
-    #     else:
-    #         print('{} is not an accepted archive file'.format(filename))
-    #
-    # def extract_file_multiple(self, filename):
-    #     if tarfile.is_tarfile(filename):
-    #         with tarfile.open(filename) as tf:
-    #             tf.extractall()
-    #         return filename
-    #     elif zipfile.is_zipfile(filename):
-    #         with zipfile.ZipFile(filename, "r") as zf:
-    #             currentdir = os.getcwd()
-    #             newdir = currentdir + filename + "/dir"
-    #             try:
-    #                 os.mkdir(newdir)
-    #             except Exception as e:
-    #                 print("Folder already exists")
-    #             os.chdir(newdir)
-    #             zf.extractall()
-    #             archive_files = self.archive_files(newdir + "/" + filename)
-    #             newfiles = []
-    #             for name in archive_files:
-    #                 newfiles.append(newdir + "/" + name)
-    #         return newfiles
-    #     else:
-    #         print('{} is not an accepted archive file'.format(filename))
+            else:
+                product.sudo().write({'min_qty': qty,
+                                      'price': price})
+        except Exception as e:
+            print(e)
+            return product_obj
 
     def file_type(self, filename):
         filetype = "file"
@@ -257,52 +253,28 @@ class edi_pricelist_config(models.Model):
     _name = 'edi.price_list_config'
     _description = 'edi model for configuring priceList '
 
+    name = fields.Char(compute="compute_rec_name")
     sftp_conn = fields.Many2one('edi.sftp_connection')
     supplier = fields.Many2one("res.partner")
     priceListName = fields.Char("Price list name")
     priceListNameFinal = fields.Char(compute='compute_priceListName')
-    listFields = fields.Char(compute="_get_field")
-    listFieldConfig = fields.Many2one('edi.price_list_fields')
+    listFields = fields.Char(compute="_get_field", readonly=True)
+    listFieldConfig = fields.Many2one('edi.price_list_fields', readonly=True)
     selection = fields.Many2one('edi.selections')
 
-    # def _get_field(self):
-    #     list = []
-    #     for rec in self:
-    #         rec.listFields = ""
-    #         if rec.sftp_conn and rec.priceListName:
-    #             hostname = rec.sftp_conn.hostname
-    #             password = rec.sftp_conn.password
-    #             username = rec.sftp_conn.username
-    #             sftp = sftp_conn(hostname, password, username)
-    #             selection = self.env['edi.selections'].create({'name': 'rec.priceListName', 'in_use': True})
-    #             self.write({'selection': selection})
-    #             print(f"in the parent method:{self.selection}")
-    #             if sftp:
-    #                 localPath = "/mnt/extra-addons/pricelists/" + rec.priceListName
-    #                 try:
-    #                     sftp.get(rec.priceListName, localPath)
-    #                     with open(localPath) as csv_file:
-    #                         csv_r = csv.reader(csv_file)
-    #                         data = next(csv_r)
-    #                         i = 0
-    #                         for elem in data:
-    #                             list.append((str(i), elem))
-    #                             field = self.field_create(elem, str(i), True, selection.id)
-    #                             selection.write({'fields_ids': [(4, field.id)]})
-    #                             i += 1
-    #                         rec.listFields = list
-    #                     if sftp: sftp.close()
-    #                 except Exception as e:
-    #                     print(e)
     @api.depends('priceListName')
     def compute_priceListName(self):
-        self.get_file()
-        # localpath = "/mnt/extra-addons/pricelists/" + self.priceListName
+        for rec in self:
+            rec.get_file()
+            if rec.priceListName:
+                rec.priceListNameFinal = rec.extract_file(rec.priceListName)
+            else:
+                rec.priceListNameFinal = ""
 
-        if self.priceListName:
-            self.priceListNameFinal = self.extract_file(self.priceListName)
-        else:
-            self.priceListNameFinal = ""
+    @api.depends('sftp_conn', 'priceListName')
+    def compute_rec_name(self):
+        for rec in self:
+            rec.name = rec.sftp_conn.supplier + "_" + rec.priceListName
 
     def extract_file(self, file):
         filename = "/mnt/extra-addons/pricelists/" + file
@@ -345,8 +317,8 @@ class edi_pricelist_config(models.Model):
         try:
             sftp = sftp_conn(self.sftp_conn.hostname, self.sftp_conn.username,
                              self.sftp_conn.password, 22)
-            localpath = "/mnt/extra-addons/pricelists/" + self.priceListName
-            sftp.get(self.priceListName, localpath)
+            localPath = "/mnt/extra-addons/pricelists/" + self.priceListName
+            sftp.get(self.priceListName, localPath)
             if sftp: sftp.close()
         except Exception as e:
             print(e)
@@ -356,9 +328,9 @@ class edi_pricelist_config(models.Model):
         for rec in self:
             rec.listFields = ""
             if rec.sftp_conn and rec.priceListName:
-                selection = self.env['edi.selections'].create({'name': 'rec.priceListName', 'in_use': True})
-                self.write({'selection': selection})
-                print(f"in the parent method:{self.selection}")
+                selection = rec.env['edi.selections'].create(
+                    {'name': rec.sftp_conn.supplier + '_' + rec.priceListName, 'in_use': True})
+                rec.write({'selection': selection})
                 localPath = rec.priceListNameFinal
                 try:
                     with open(localPath, encoding='cp1252', errors='ignore') as csv_file:
@@ -367,7 +339,7 @@ class edi_pricelist_config(models.Model):
                         i = 0
                         for elem in data:
                             list.append((str(i), elem))
-                            field = self.field_create(elem, str(i), True, selection.id)
+                            field = rec.field_create(elem, str(i), True, selection.id)
                             selection.write({'fields_ids': [(4, field.id)]})
                             i += 1
                         rec.listFields = list
@@ -390,7 +362,6 @@ class edi_pricelist_config(models.Model):
             wizard_obj = self.env['edi.price_list_fields'].create({'config': self.id})
         self.write({'listFieldConfig': wizard_obj.id})
         ctx = self.env.context.copy()
-        print(self.selection)
         ctx.update({'selection': self.selection.id})
         wizard_obj.with_context(ctx).init()
         return {
@@ -413,41 +384,32 @@ class edi_pricelist_config(models.Model):
         }
 
 
-"""
-    @api.depends('listFields')
-    def _get_fields(self):
-
-        select = self.listFields
-
-        return select
-"""
-
-
 class edi_pricelist_fields(models.Model):
     _name = 'edi.price_list_fields'
     _description = 'edi model for configuring priceList fields '
 
-    priceSupplier = fields.Selection(string='Supplier price', selection=lambda self: self.init())
-    product_nameSupplier = fields.Selection(string='Supplier product name', selection=lambda self: self.init())
-    qtySupplier = fields.Selection(string='Supplier quantity', selection=lambda self: self.init())
-    product_codeSupplier = fields.Selection(string='Supplier product code', selection=lambda self: self.init())
-    product_code = fields.Integer(compute="save", store=True, readonly=True)
-    qty = fields.Integer(compute="save", store=True, readonly=True)
-    price = fields.Integer(compute="save", store=True, readonly=True)
+    name = fields.Char('Configuration fichier', compute='compute_name')
+    priceSupplier = fields.Selection(string='Champ Prix Fournisseur', selection=lambda self: self.init())
+    product_nameSupplier = fields.Selection(string='Champ Nom fournisseur', selection=lambda self: self.init())
+    qtySupplier = fields.Selection(string='Champ quantite fournisseur', selection=lambda self: self.init())
+    product_codeSupplier = fields.Selection(string='Reference constructeur', selection=lambda self: self.init())
+    product_code = fields.Integer(string="Code produit ordre", compute="save", store=True, readonly=True)
+    qty = fields.Integer(string="Code produit quantite", compute="save", store=True, readonly=True)
+    price = fields.Integer(string="Code produit prix", compute="save", store=True, readonly=True)
     config = fields.Many2one('edi.price_list_config', readonly=True)
     selection = fields.Many2one('edi.selections')
 
     def init(self):
-        # if self.env.context.get('selection', False):
-        if self.selection:
-            select_id = self.selection.id
-            print(f"this the selection found: {self.selection.id}")
+        if self.selection or self.env.context.get('selection'):
+            if self.selection:
+                select_id = self.selection.id
+            elif self.env.context.get('selection'):
+                select_id = self.env.context.get('selection')
+                self.write({'selection': select_id})
+            selection = self.env['edi.selections']
+            listFields = selection.get_selection_field(select_id)
         else:
-            print("get Context of Wizard HERE", self.env.context.get('selection'))
-            select_id = self.env.context.get('selection')
-            self.write({'selection': select_id})
-        selection = self.env['edi.selections']
-        listFields = selection.get_selection_field(select_id)
+            listFields = []
         return listFields
 
     def edit(self):
@@ -456,7 +418,6 @@ class edi_pricelist_fields(models.Model):
                     'qtySupplier': rec.qtySupplier,
                     'product_codeSupplier': rec.product_codeSupplier,
                     }
-            print(f"this fields: {rec.priceSupplier}")
             rec = super(edi_pricelist_fields, self).write(vals)
             return rec
 
@@ -466,3 +427,22 @@ class edi_pricelist_fields(models.Model):
             rec.product_code = rec.product_codeSupplier
             rec.price = rec.priceSupplier
             rec.qty = rec.qtySupplier
+
+    @api.depends('config')
+    def compute_name(self):
+        for rec in self:
+            if rec.config.supplier.name and rec.config.priceListName:
+                rec.name = rec.config.supplier.name + "_" + rec.config.priceListName
+
+
+class edi_schedual_update(models.Model):
+    _name = 'edi.schedual_update'
+    _description = 'Class to schedual the price lists updates'
+    hour = fields.Integer('Heure')
+    samedi = fields.Boolean('Samedi')
+    Dimanche = fields.Boolean('Dimanche')
+    Lundi = fields.Boolean('Lundi')
+    Mardi = fields.Boolean('Mardi')
+    Mercredi= fields.Boolean('Mercredi')
+    Jeudi = fields.Boolean('Jeudi')
+    Vendredi = fields.Boolean('Vendredi')

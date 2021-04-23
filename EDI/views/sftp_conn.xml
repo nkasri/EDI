@@ -117,7 +117,7 @@
                 </form>
             </field>
         </record>
-        <!-- SFTP fiedl tree view-->
+        <!-- SFTP field tree view-->
         <record model="ir.ui.view" id="view_sftp_file_download_tree">
             <field name="name">File Download</field>
             <field name="model">edi.file_download</field>
@@ -225,14 +225,9 @@
         <menuitem id="main_edi_price_list_config_action" parent="main_edi_menu" action="edi_price_list_config_action"/>
 
 
-
-
-
-
-
           <!-- price list config form view-->
         <record model="ir.ui.view" id="view_edi_price_list_field_form">
-            <field name="name">Price list configuration</field>
+            <field name="name">Configuration des champs de List des prix</field>
             <field name="model">edi.price_list_fields</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
@@ -245,9 +240,9 @@
                             <field name="qtySupplier" />
                             <field name="product_codeSupplier" />
 
-                            <field name="price"/>
-                            <field name="qty" />
-                            <field name="product_code" />
+<!--                            <field name="price"/>-->
+<!--                            <field name="qty" />-->
+<!--                            <field name="product_code" />-->
 
                         </group>
 
@@ -257,22 +252,21 @@
         </record>
         <!--  price list config tree view-->
         <record model="ir.ui.view" id="view_edi_price_list_field_tree">
-            <field name="name">Price List Configuration</field>
+            <field name="name">Configuration des champs de List des prix</field>
             <field name="model">edi.price_list_fields</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
                 <tree>
                           <field name="selection"/>
-                            <field name="config" />
-                                <field name="priceSupplier"/>
-                            <field name="qtySupplier" />
-
-
+                          <field name="config" />
+                          <field name="price"/>
+                          <field name="qty" />
+                          <field name="product_code" />
                 </tree>
             </field>
         </record>
         <record model="ir.actions.act_window" id="edi_sftp_fields">
-            <field name="name">File download</field>
+            <field name="name">Configuration des champs </field>
             <field name="res_model">edi.price_list_fields</field>
             <field name="view_mode">tree,form</field>
         </record>

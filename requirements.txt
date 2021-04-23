@@ -2,3 +2,4 @@ pypeg2
 requests~=2.23.0
 paramiko~=2.7.2
 boto3
+configparser

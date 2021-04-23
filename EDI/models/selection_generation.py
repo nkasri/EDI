@@ -24,4 +24,4 @@ class SelectionsFields(models.Model):
     name = fields.Char(string='Option', required=True)
     value = fields.Char(string='Value', required=True)
     in_use = fields.Boolean(string='Active', default=True)
-    selection_id = fields.Many2one('edi.selections', ondelele='cascade', index=True)
+    selection_id = fields.Many2one('edi.selections', ondelete='cascade', index=True)
