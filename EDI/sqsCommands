@@ -1,7 +1,1 @@
-import boto3
-import json
 
-client = boto3.resource('sqs', region_name='eu-west-2', aws_access_key_id="AKIAXOFYUBQFXLYZTW74", aws_secret_access_key="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")
-queue = client.get_queue_by_name(QueueName='tekkeysOdooOrders')
-data = json.dumps(Message)
-response = queue.send_message(MessageBody=data)
